@@ -7,6 +7,8 @@
 (in-readtable :fare-quasiquote)
 
 (defconst +caller-saved-regs+ '(rax rdx rcx rsi rdi r8 r9 r10 r11))
+(defconst +callee-saved-regs+ '(rbx r12 r13 r14 r15)) ;rsp,rbp never allocated
+(defconst +callee-save-space+ (* 8 (length +callee-saved-regs+)))
 
 (defun add-conflicts-from-block (conflicts block)
   (flet ((conflicts-of (insn live-after)
@@ -36,7 +38,7 @@
       ( `(program ,info ,blocks)
          (let ((locals (cdr (assoc :locals info)))
                (conflicts (make-container 'graph-container :vertex-test 'eq :default-edge-type :undirected)))
-           ;; Each register is allocated to itself.
+           ;; Each caller-saved register is allocated to itself.
            (loop for reg in +caller-saved-regs+
                  for col from 0
                  do (add-vertex conflicts reg :color col))

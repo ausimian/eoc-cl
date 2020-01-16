@@ -30,19 +30,28 @@
 (defun allocate-registers (expr)
   (flet ((gen-homes (conflicts locals)
            (loop with colors = (color-graph conflicts locals)
+                 with avail  = (append +caller-saved-regs+ +callee-saved-regs+)
+                 with spill-index = (length avail)
                  with homes  = ()
-                 with spill-index = (length +caller-saved-regs+)
                  for local in locals
                  do (let* ((color (cdr (assoc local colors)))
                            (home  (if (< color spill-index)
-                                      `(reg ,(nth color +caller-saved-regs+))
-                                      `(deref rbp ,(* -8 (1+ (- color spill-index)))))))
+                                      `(reg ,(nth color avail))
+                                      `(deref rbp ,(- (- +callee-save-space+)
+                                                      (* 8 (1+ (- color spill-index))))))))
                       (push (cons local home) homes))
                  finally (return homes))))
     (ematch expr
       ( `(program ,(alist (:conflicts . conflicts) (:locals . locals)) ,blocks)
-         (let* ((homes (gen-homes conflicts locals))
-                (spilt (loop for home in homes when (eq 'deref (cadr home)) collect (car home))))
-           `(program ((:lang . x86p) (:stack-space . ,(* 8 (length spilt))))
-                     ,(loop for blk in blocks collect (assign-homes-block blk homes))))))))
+         (let* ((homes (gen-homes conflicts locals)))
+           (loop with callees = () ; callee-saved registers allocated to variables
+                 with spilt   = () ; stack locations allocated to (spilt) varaibles
+                 for home in homes
+                 do (ematch (cdr home)
+                      ( `(reg ,r) (when (member r +callee-saved-regs+) (setf callees (adjoin r callees))))
+                      ( `(deref rbp ,d) (setf spilt (adjoin d spilt))))
+                 finally
+                    (return
+                      `(program ((:lang . x86p) (:spilt . ,spilt) (:callee-saved . ,callees))
+                                ,(loop for blk in blocks collect (assign-homes-block blk homes))))))))))
 

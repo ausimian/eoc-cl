@@ -27,25 +27,34 @@
 
 (defun print-x86 (e)
   "Produce valid gcc assembly source as a list of lines."
-  (flet ((prologue (ss) `((pushq (reg rbp))
-                          (movq  (reg rsp) (reg rbp))
-                          (subq  (int ,ss) (reg rsp))
-                          (jmp :start)))
-         (epilogue (ss) `((addq  (int ,ss) (reg rsp))
-                          (popq  (reg rbp))
-                          (movq  (reg rax) (reg rdi))
-                          (callq :print_result)
-                          (xorq  (reg rax) (reg rax))
-                          (retq))))
+  (labels ((prologue (stack-size callee-saved)
+             `((pushq (reg rbp))
+               (movq  (reg rsp) (reg rbp))
+               ,@(when (not (zerop stack-size))
+                   `((subq (int ,stack-size) (reg rsp))
+                     ,@(loop for i from 1
+                             for r in callee-saved collect `(movq (reg ,r) (deref rbp ,(* -8 i))))))
+               (jmp :start)))
+           (epilogue (stack-size callee-saved)
+             `(,@(when (not (zerop stack-size))
+                   `(,@(loop for i from 1
+                             for r in callee-saved collect `(movq (deref rbp ,(* -8 i)) (reg ,r)))
+                     (addq (int ,stack-size) (reg rsp))))
+               (popq  (reg rbp))
+               (movq  (reg rax) (reg rdi))
+               (callq :print_result)
+               (xorq  (reg rax) (reg rax))
+               (retq))))
     (ematch e
-      ( `(program ,(assoc :stack-space stack-size) ,blocks)
-         (unless (zerop (mod stack-size 16))
-           (incf stack-size 8))
-         `(program
-           ((:lang . x86asm))
-           ("       .globl main"
-            "main:"
-            ,@(mapcar #'print-x86-insn (prologue stack-size))
-            ,@(loop for b in blocks append (print-x86-block b))
-            "finish:"
-            ,@(mapcar #'print-x86-insn (epilogue stack-size))))))))
+      ( `(program ,(alist (:spilt . spilt) (:callee-saved . callee-saved)) ,blocks)
+         (let ((stack-size (apply #'min (if callee-saved +callee-save-space+ 0) spilt)))
+           (unless (zerop (mod stack-size 16))
+             (incf stack-size 8))
+           `(program
+             ((:lang . x86asm))
+             ("       .globl main"
+              "main:"
+              ,@(mapcar #'print-x86-insn (prologue stack-size callee-saved))
+              ,@(loop for b in blocks append (print-x86-block b))
+              "finish:"
+              ,@(mapcar #'print-x86-insn (epilogue stack-size callee-saved)))))))))

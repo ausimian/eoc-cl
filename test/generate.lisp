@@ -13,13 +13,13 @@
 
 (defun generate-expr (&optional (level 0) vars)
   "Generate a random R1 expression."
-  (case (random (if (< level 15) 6 2))
+  (case (random (if (< level 25) 6 2))
     (0 (random 1000))
     (1 '(read-int))
     (2 (if vars
            (nth (random (length vars)) vars)
            (generate-expr level vars)))
-    (3 (if (< level 5)
+    (3 (if (< level 25)
            (let ((var (generate-var vars)))
              `(let ((,var ,(generate-expr (1+ level) vars)))
                 ,(generate-expr (1+ level) (cons var vars))))
