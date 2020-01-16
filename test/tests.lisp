@@ -59,7 +59,7 @@
                      uncover-locals
                      select-instructions))))
 
-(def-test assign-homes ()
+(def-test allocate-registers ()
   (for-all ((expr (expression-generator)))
     (is-equiv expr '(uniquify
                      remove-complex
@@ -67,7 +67,10 @@
                      explicate-control
                      uncover-locals
                      select-instructions
-                     assign-homes))))
+                     uncover-live
+                     build-interference
+                     allocate-registers
+                     ))))
 
 (def-test patch-instructions ()
   (for-all ((expr (expression-generator)))
@@ -77,7 +80,9 @@
                      explicate-control
                      uncover-locals
                      select-instructions
-                     assign-homes
+                     uncover-live
+                     build-interference
+                     allocate-registers
                      patch-instructions))))
 
 (def-test print-x86 ()
@@ -88,7 +93,9 @@
                      explicate-control
                      uncover-locals
                      select-instructions
-                     assign-homes
+                     uncover-live
+                     build-interference
+                     allocate-registers
                      patch-instructions
                      print-x86))))
 

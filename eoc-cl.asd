@@ -5,11 +5,12 @@
   :author "Nick Gunn <nick@ausimian.net>"
   :license  "BSD"
   :version "0.0.1"
-  :depends-on ("fare-quasiquote" "trivia" "trivia.quasiquote")
+  :depends-on ("fare-quasiquote" "trivia" "trivia.quasiquote" "cl-graph")
   :serial t
   :components ((:module "src"
                 :serial t
                 :components ((:file "package")
+                             (:file "utilities")
                              (:file "runtime")
                              (:file "uniquify")
                              (:file "remove-complex")
@@ -19,6 +20,9 @@
                              (:file "select-instructions")
                              (:file "assign-homes")
                              (:file "patch-instructions")
+                             (:file "uncover-live")
+                             (:file "build-interference")
+                             (:file "allocate-registers")
                              (:file "print-x86"))))
   :in-order-to ((test-op (test-op eoc-cl/tests))))
 

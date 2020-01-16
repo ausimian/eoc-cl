@@ -38,16 +38,14 @@
                           (xorq  (reg rax) (reg rax))
                           (retq))))
     (ematch e
-      ( `(program ,info ,blocks)
-         (let ((stack-size (cdr (assoc :stack-space info))))
-           (unless (zerop (mod stack-size 16))
-             (incf stack-size 8))
-           `(program
-             ((:lang . x86asm))
-             ("       .globl main"
-              "main:"
-              ,@(mapcar #'print-x86-insn (prologue stack-size))
-              ,@(loop for b in blocks append (print-x86-block b))
-              "finish:"
-              ,@(mapcar #'print-x86-insn (epilogue stack-size)))))))))
-
+      ( `(program ,(assoc :stack-space stack-size) ,blocks)
+         (unless (zerop (mod stack-size 16))
+           (incf stack-size 8))
+         `(program
+           ((:lang . x86asm))
+           ("       .globl main"
+            "main:"
+            ,@(mapcar #'print-x86-insn (prologue stack-size))
+            ,@(loop for b in blocks append (print-x86-block b))
+            "finish:"
+            ,@(mapcar #'print-x86-insn (epilogue stack-size))))))))

@@ -1,7 +1,7 @@
 ;;;; package.lisp
 
 (defpackage #:eoc-cl
-  (:use #:cl #:named-readtables #:trivia)
+  (:use #:cl #:named-readtables #:trivia #:cl-containers #:cl-graph)
   (:export
 
    ;; languages
@@ -13,8 +13,10 @@
    ;; assembly keywords
    #:addq #:movq #:negq #:retq #:jmp #:deref #:xorq #:callq
 
-   ;; registers
-   #:rax #:rbp #:rsp #:rdi
+   ;; caller-saved registers
+   #:rax #:rdx #:rcx #:rsi #:rdi #:r8 #:r9 #:r10 #:r11
+   ;; callee-saved registers
+   #:rsp #:rbp #:rbx #:r12 #:r13 #:r14 #:r15
 
    ;; passes
    #:uniquify
@@ -23,6 +25,8 @@
    #:explicate-control
    #:uncover-locals
    #:select-instructions
-   #:assign-homes
+   #:uncover-live
+   #:build-interference
+   #:allocate-registers
    #:patch-instructions
    #:print-x86))
